@@ -1,0 +1,149 @@
+name: haben
+
+# Haben (selbst gehostete Buchhaltung, https://github.com/firsttris/haben) auf ZimaOS.
+# Inoffizielle Installationshilfe, kein Teil des Haben-Projekts.
+#
+# Vor dem Start alles in eckigen Klammern ersetzen (siehe README.md):
+# - [DEINE-IP]               IP-Adresse deines ZimaOS-Rechners, z. B. 192.168.178.50
+# - [DB-PASSWORT]            openssl rand -hex 24          (an allen drei Stellen gleich)
+# - [AUTH-SECRET]            openssl rand -base64 32
+# - [ENCRYPTION-KEY]         openssl rand -base64 32
+# - [BACKUP-PASSWORT]        openssl rand -base64 32
+# - [SETUP-CODE]             Einrichtungscode deiner Wahl, mind. 8 Zeichen
+# - /DEIN/NAS/ORDNER         Backup-Ordner auf dem NAS, z. B. /media/192.168.178.100/Backup/Haben
+# Ohne echte Werte startet Haben nicht.
+#
+# Betrieb über plain HTTP im LAN:
+# - Anmeldung mit E-Mail und Passwort. Passkeys gehen nur über HTTPS.
+# - BETTER_AUTH_URL muss genau die Adresse sein, die im Browser steht.
+# - Ersteinrichtung: http://[DEINE-IP]:8690/setup, mit deinem [SETUP-CODE].
+#
+# Haben ist Beta. Alle drei Images nutzen :latest und müssen immer zur selben Version gehören.
+# Update: in ZimaOS über das Update der App oder drei Punkte > Verwalten > Speichern (siehe README.md). Migrationen lassen sich nicht zurückspielen.
+
+services:
+  # Einmalig: gibt dem App-User (UID 1000) Schreibrechte auf die AppData-Ordner.
+  init-perms:
+    image: alpine:3.20
+    container_name: haben-init-perms
+    restart: "no"
+    command: ["sh", "-c", "chown -R 1000:1000 /belege /eric-log /eric"]
+    volumes:
+      - /DATA/AppData/haben/belege:/belege
+      - /DATA/AppData/haben/eric-log:/eric-log
+      - /DATA/AppData/haben/eric:/eric
+
+  db:
+    # PostgreSQL 18 mit automatischem pg_upgrade bei neuen Major-Versionen
+    image: ghcr.io/firsttris/haben-db:latest
+    container_name: haben-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: haben
+      POSTGRES_DB: haben
+      POSTGRES_PASSWORD: "[DB-PASSWORT]"
+    volumes:
+      - /DATA/AppData/haben/db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "haben"]
+      interval: 5s
+      retries: 20
+      start_period: 10m
+    networks:
+      - haben
+
+  app:
+    image: ghcr.io/firsttris/haben:latest
+    container_name: haben-app
+    restart: unless-stopped
+    depends_on:
+      init-perms:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      DATABASE_URL: "postgres://haben:[DB-PASSWORT]@db:5432/haben"
+      BETTER_AUTH_URL: "http://[DEINE-IP]:8690"
+      BETTER_AUTH_SECRET: "[AUTH-SECRET]"
+      # Verschlüsselt ELSTER-Zertifikat und API-Schlüssel. Zusätzlich im Passwortmanager sichern.
+      HABEN_ENCRYPTION_KEY: "[ENCRYPTION-KEY]"
+      # Einrichtungscode für /setup (mind. 8 Zeichen)
+      HABEN_SETUP_CODE: "[SETUP-CODE]"
+      # Optional, Zeilen nur einkommentieren, wenn sie einen Wert haben (leere Werte lässt die Prüfung teils nicht zu):
+      # ERIC_AUTO_INSTALL: "ja"            # ERiC von download.elster.de laden (= Zustimmung zu dessen Nutzungsbedingungen)
+    volumes:
+      - /DATA/AppData/haben/belege:/var/lib/haben/belege
+      - /DATA/AppData/haben/eric-log:/var/lib/haben/eric-log
+      - /DATA/AppData/haben/eric:/var/lib/haben/eric
+    ports:
+      - "8690:3000"
+    networks:
+      - haben
+
+  # Tägliches Backup (03:15) von Datenbank und Belegen aufs NAS, verschlüsselt mit restic.
+  # Sichert im laufenden Betrieb (pg_dump), die App muss dafür nicht gestoppt werden.
+  # Im NAS-Ordner muss die Datei HABEN-BACKUP-ZIEL.txt liegen. Fehlt sie (NAS nicht eingehängt),
+  # bricht der Lauf ab, statt still auf die lokale Platte zu sichern.
+  # Backup jetzt:        docker exec haben-backup backup.sh
+  # Stände anzeigen:     docker exec haben-backup restic snapshots
+  # Test-Restore jetzt:  docker exec haben-backup restore-check.sh
+  backup:
+    image: ghcr.io/firsttris/haben-backup:latest
+    container_name: haben-backup
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    entrypoint:
+      - bash
+      - -c
+      - >-
+        backup.sh() { [ -f /backups/HABEN-BACKUP-ZIEL.txt ] || { echo "NAS nicht eingehängt: /backups/HABEN-BACKUP-ZIEL.txt fehlt, Backup abgebrochen." >&2; return 1; }; command backup.sh "$$@"; };
+        export -f backup.sh;
+        exec entrypoint.sh
+    environment:
+      PGPASSWORD: "[DB-PASSWORT]"
+      # Ohne dieses Passwort lässt sich das Backup nicht öffnen: im Passwortmanager sichern, zusammen mit HABEN_ENCRYPTION_KEY
+      RESTIC_PASSWORD: "[BACKUP-PASSWORT]"
+      RESTIC_REPOSITORY: /backups/repo
+      BACKUP_TIME: "03:15"
+      RESTORE_CHECK_DAYS: "7"
+    volumes:
+      - /DATA/AppData/haben/belege:/belege:ro
+      # NAS-Ordner, Pfad in ZimaOS unter Dateien prüfen
+      - /DEIN/NAS/ORDNER:/backups
+    healthcheck:
+      # Ungesund, wenn der letzte Lauf fehlschlug oder seit zwei Tagen keiner durchlief.
+      # Bewusst ohne $: ZimaOS ersetzt $$var beim Import durch einen leeren String.
+      test: ["CMD-SHELL", "[ ! -f /var/lib/haben-backup/status ] || { grep -q '^ok' /var/lib/haben-backup/status && find /var/lib/haben-backup/status -mmin -2880 | grep -q . ; }"]
+      interval: 5m
+    networks:
+      - haben
+
+networks:
+  haben:
+    name: haben
+
+# App-Angaben für ZimaOS (Name, Icon, Port).
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: app
+  author: firsttris
+  category: Finance
+  description:
+    en_us: Self-hosted bookkeeping for German freelancers and small businesses with e-invoicing, bank reconciliation and ELSTER.
+    de_de: Selbst gehostete Buchhaltung für Freiberufler und Kleinunternehmer mit E-Rechnung, Bankabgleich, EÜR und ELSTER.
+  developer: firsttris
+  icon: https://raw.githubusercontent.com/firsttris/haben/main/apps/web/public/icon-192.png
+  tagline:
+    en_us: Self-hosted bookkeeping
+    de_de: Selbst gehostete Buchhaltung
+  title:
+    en_us: Haben
+  index: /
+  port_map: "8690"
+  scheme: http
