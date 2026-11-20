@@ -1,6 +1,6 @@
 name: haben
 
-# Haben (selbst gehostete Buchhaltung, https://github.com/firsttris/haben) auf ZimaOS.
+# Haben (selbst gehostete Buchhaltung, https://github.com/Speicherstadt/haben) auf ZimaOS.
 # Inoffizielle Installationshilfe, kein Teil des Haben-Projekts.
 #
 # Vor dem Start alles in eckigen Klammern ersetzen (siehe README.md):
@@ -35,7 +35,7 @@ services:
 
   db:
     # PostgreSQL 18 mit automatischem pg_upgrade bei neuen Major-Versionen
-    image: ghcr.io/firsttris/haben-db:latest
+    image: ghcr.io/speicherstadt/haben-db:latest
     container_name: haben-db
     restart: unless-stopped
     environment:
@@ -53,7 +53,7 @@ services:
       - haben
 
   app:
-    image: ghcr.io/firsttris/haben:latest
+    image: ghcr.io/speicherstadt/haben:latest
     container_name: haben-app
     restart: unless-stopped
     depends_on:
@@ -90,7 +90,7 @@ services:
   # Stände anzeigen:     docker exec haben-backup restic snapshots
   # Test-Restore jetzt:  docker exec haben-backup restore-check.sh
   backup:
-    image: ghcr.io/firsttris/haben-backup:latest
+    image: ghcr.io/speicherstadt/haben-backup:latest
     container_name: haben-backup
     restart: unless-stopped
     depends_on:
@@ -132,13 +132,13 @@ x-casaos:
     - amd64
     - arm64
   main: app
-  author: firsttris
+  author: Speicherstadt
   category: Finance
   description:
     en_us: Self-hosted bookkeeping for German freelancers and small businesses with e-invoicing, bank reconciliation and ELSTER.
     de_de: Selbst gehostete Buchhaltung für Freiberufler und Kleinunternehmer mit E-Rechnung, Bankabgleich, EÜR und ELSTER.
-  developer: firsttris
-  icon: https://raw.githubusercontent.com/firsttris/haben/main/apps/web/public/icon-192.png
+  developer: Speicherstadt
+  icon: https://raw.githubusercontent.com/Speicherstadt/haben/main/apps/web/public/icon-192.png
   tagline:
     en_us: Self-hosted bookkeeping
     de_de: Selbst gehostete Buchhaltung

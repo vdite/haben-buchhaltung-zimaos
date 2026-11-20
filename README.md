@@ -1,6 +1,6 @@
 # Haben: Kostenlose Buchhaltungssoftware auf ZimaOS installieren
 
-Fertige ZimaOS-YAML (Docker Compose) für **[Haben](https://github.com/firsttris/haben)**, die kostenlose Open-Source-Buchhaltung für Freiberufler und Kleinunternehmer. Datei herunterladen, Platzhalter ersetzen, in ZimaOS als eigene App importieren. Ein tägliches, verschlüsseltes Backup aufs NAS ist schon eingebaut.
+Fertige ZimaOS-YAML (Docker Compose) für **[Haben](https://github.com/Speicherstadt/haben)**, die kostenlose Open-Source-Buchhaltung für Freiberufler und Kleinunternehmer. Datei herunterladen, Platzhalter ersetzen, in ZimaOS als eigene App importieren. Ein tägliches, verschlüsseltes Backup aufs NAS ist schon eingebaut.
 
 **Ausführliche Anleitung mit YAML-Generator:** [Haben: Kostenlose Buchhaltungssoftware auf ZimaOS installieren](https://mizine.de/homeserver/haben-buchhaltung-zimaos-installieren/). Der Generator trägt deine IP, deinen NAS-Pfad und deine Schlüssel direkt ein, ohne Suchen und Ersetzen.
 
@@ -16,9 +16,9 @@ Haben ist eine selbst gehostete Buchhaltungssoftware und ein Rechnungsprogramm. 
 - **EÜR oder Bilanz** und **Steuererklärungen** direkt an **ELSTER** senden
 - **DATEV-Export** für die Steuerberatung
 
-Haben ist eine Open-Source-Alternative zu Lexware Office (lexoffice), sevDesk und Accountable. Entwickelt wird es von [firsttris](https://github.com/firsttris) unter der AGPL-3.0.
+Haben ist eine Open-Source-Alternative zu Lexware Office (lexoffice), sevDesk und Accountable. Entwickelt wird es von Tristan Teufel ([firsttris](https://github.com/firsttris)) und einer wachsenden Community unter der GitHub-Organisation [Speicherstadt](https://github.com/Speicherstadt), lizenziert unter der AGPL-3.0.
 
-**Wichtig:** Das hier ist eine **inoffizielle Installationshilfe** für ZimaOS und kein Teil des Haben-Projekts. Doku, Fehlermeldungen und Fragen zu Haben selbst gehören ins [Original-Repo](https://github.com/firsttris/haben).
+**Wichtig:** Das hier ist eine **inoffizielle Installationshilfe** für ZimaOS und kein Teil des Haben-Projekts. Doku, Fehlermeldungen und Fragen zu Haben selbst gehören ins [Original-Repo](https://github.com/Speicherstadt/haben).
 
 ## Was drin ist
 
@@ -80,7 +80,13 @@ Zeigt ZimaOS bei der App ein Update an, klickst du darauf. Oder du gehst bei der
 
 Datenbank-Migrationen laufen beim Start automatisch und lassen sich nicht zurückspielen. Wer vorher noch ein Backup will, startet es mit `docker exec haben-backup backup.sh`.
 
-Wenn du eine bestimmte Version festhalten willst, ersetze `latest` an allen drei Stellen durch dieselbe Versionsnummer, z. B. `0.6.4`.
+Wenn du eine bestimmte Version festhalten willst, ersetze `latest` an allen drei Stellen durch dieselbe Versionsnummer, z. B. `0.12.0`.
+
+### Umzug zu Speicherstadt (ab Version 0.12)
+
+Haben ist im November 2026 in die GitHub-Organisation [Speicherstadt](https://github.com/Speicherstadt) umgezogen. Die Images heißen jetzt `ghcr.io/speicherstadt/haben`, `haben-db` und `haben-backup`. Unter `ghcr.io/firsttris/...` bleibt Version 0.11 stehen.
+
+Hast du eine ältere Fassung dieser YAML im Einsatz, ersetze einmal in den drei `image:`-Zeilen `firsttris` durch `speicherstadt` (drei Punkte, **Verwalten**, Reiter **YAML**, **Speichern**). Deine Daten bleiben erhalten.
 
 ## Änderungen in ZimaOS
 
@@ -98,4 +104,4 @@ Wenn du eine bestimmte Version festhalten willst, ersetze `latest` an allen drei
 
 ## Lizenz
 
-Diese YAML und Anleitung: MIT. Haben selbst steht unter der [AGPL-3.0](https://github.com/firsttris/haben/blob/main/LICENSE).
+Diese YAML und Anleitung: MIT. Haben selbst steht unter der [AGPL-3.0](https://github.com/Speicherstadt/haben/blob/main/LICENSE).
