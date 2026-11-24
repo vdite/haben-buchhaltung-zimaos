@@ -1,3 +1,6 @@
 .DS_Store
 *.local.yml
 .env
+
+# Claude Code local settings
+.claude/settings.local.json
