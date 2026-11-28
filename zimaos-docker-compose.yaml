@@ -34,7 +34,7 @@ services:
       - /DATA/AppData/haben/eric:/eric
 
   db:
-    # PostgreSQL 18 mit automatischem pg_upgrade bei neuen Major-Versionen
+    # PostgreSQL, hebt ältere Datenbestände beim Start selbst an (pg_upgrade)
     image: ghcr.io/speicherstadt/haben-db:latest
     container_name: haben-db
     restart: unless-stopped

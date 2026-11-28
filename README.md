@@ -25,7 +25,7 @@ Haben ist eine Open-Source-Alternative zu Lexware Office (lexoffice), sevDesk un
 | Container | Aufgabe |
 |---|---|
 | `haben-init-perms` | setzt einmalig die Rechte der AppData-Ordner und beendet sich |
-| `haben-db` | PostgreSQL 18 |
+| `haben-db` | PostgreSQL, hebt ältere Datenbestände beim Start selbst an |
 | `haben-app` | die Weboberfläche auf Port 8690 |
 | `haben-backup` | tägliches, verschlüsseltes Backup (restic) von Datenbank und Belegen aufs NAS |
 
